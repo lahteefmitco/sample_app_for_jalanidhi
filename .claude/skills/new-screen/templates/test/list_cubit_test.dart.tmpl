@@ -1,0 +1,103 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:{{package}}/core/constants/route_names.dart';
+import 'package:{{package}}/core/state/ui_effect.dart';
+import 'package:{{package}}/core/state/view_status.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/global/repositories/{{item_snake}}_repository.dart';
+
+import '{{testHelpers}}/fake_backend.dart';
+
+/// Three {{items}} served by the fake backend.
+final List<Map<String, dynamic>> _{{items}}Json = <Map<String, dynamic>>[
+  <String, dynamic>{'id': 1, 'title': 'Alpha'},
+  <String, dynamic>{'id': 2, 'title': 'Beta'},
+  <String, dynamic>{'id': 3, 'title': 'Gamma'},
+];
+
+/// Unit tests of [{{Screen}}Cubit]: load, search, effects, errors,
+/// cancellation and the busy flag.
+void main() {
+  late FakeBackend backend;
+  late {{Screen}}Cubit cubit;
+
+  /// Builds the Cubit on top of [backend].
+  {{Screen}}Cubit buildCubit(FakeBackend backend) {
+    return {{Screen}}Cubit(
+      {{item}}Repository: {{Item}}Repository(backend.createClient()),
+    );
+  }
+
+  setUp(() {
+    backend = FakeBackend(<String, RouteHandler>{
+      'GET {{endpointPath}}': (RequestOptions _) => _{{items}}Json,
+    });
+    cubit = buildCubit(backend);
+  });
+
+  tearDown(() => cubit.close());
+
+  test('starts in the initial state and not busy', () {
+    expect(cubit.state.build.status, ViewStatus.initial);
+    expect(cubit.isBusy, isFalse);
+  });
+
+  test('load shows every {{item}} and frees the screen', () async {
+    await cubit.load();
+    expect(cubit.state.build.status, ViewStatus.loaded);
+    expect(cubit.state.build.{{items}}, hasLength(3));
+    expect(cubit.isBusy, isFalse);
+  });
+
+  test('search filters case-insensitively and can be cleared', () async {
+    await cubit.load();
+    cubit.onSearchChanged('BET');
+    expect(cubit.state.build.{{items}}.single.title, 'Beta');
+    cubit.onSearchChanged('zzz');
+    expect(cubit.state.build.status, ViewStatus.empty);
+    cubit.clearSearch();
+    expect(cubit.state.build.{{items}}, hasLength(3));
+  });
+
+  test('a failed load shows the error view and a snackbar', () async {
+    final {{Screen}}Cubit failing = buildCubit(
+      FakeBackend(<String, RouteHandler>{}),
+    );
+    await failing.load();
+    expect(failing.state.build.status, ViewStatus.error);
+    expect(failing.state.effect, isA<ShowSnackbarEffect>());
+    expect(failing.isBusy, isFalse);
+    await failing.close();
+  });
+
+  test('closing during a load cancels it without any error', () async {
+    final FakeBackend slow = FakeBackend(<String, RouteHandler>{
+      'GET {{endpointPath}}': (RequestOptions _) => _{{items}}Json,
+    }, latency: const Duration(milliseconds: 200));
+    final {{Screen}}Cubit closing = buildCubit(slow);
+    final Future<void> load = closing.load();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await closing.close();
+    await load;
+    expect(slow.count('GET {{endpointPath}}'), 1);
+    expect(closing.state.effect, isNull);
+  });
+
+  test('tapping a {{item}} opens its details sheet', () async {
+    await cubit.load();
+    cubit.on{{Item}}Tapped(cubit.state.build.{{items}}.first);
+    expect(cubit.state.effect, isA<ShowInfoSheetEffect>());
+  });
+
+  test('the floating button opens the form', () {
+    cubit.onCreatePressed();
+    final NavigateEffect effect = cubit.state.effect! as NavigateEffect;
+    expect(effect.routeName, RouteNames.{{item}}Form);
+  });
+
+  test('closing disposes the search controller', () async {
+    final {{Screen}}Cubit other = buildCubit(backend);
+    await other.close();
+    expect(() => other.searchController.addListener(() {}), throwsStateError);
+  });
+}

@@ -1,0 +1,25 @@
+/// One {{item}} as returned by `GET {{endpointPath}}`.
+///
+/// Immutable: to "change" it, create a new instance with the constructor.
+class {{Item}}Model {
+  /// Creates a {{item}}.
+  const {{Item}}Model({required this.id, required this.title});
+
+  /// Builds a {{item}} from the JSON map sent by the API.
+  factory {{Item}}Model.fromJson(Map<String, dynamic> json) {
+    return {{Item}}Model(id: json['id'] as int, title: json['title'] as String);
+  }
+
+  /// Unique id given by the server.
+  final int id;
+
+  /// Text shown in lists and searched by the search box.
+  final String title;
+
+  /// JSON map sent to the API (id omitted when creating).
+  Map<String, dynamic> toJson() => <String, dynamic>{'id': id, 'title': title};
+
+  /// Readable description, handy in logs (no sensitive data).
+  @override
+  String toString() => '{{Item}}Model(id: $id, title: $title)';
+}

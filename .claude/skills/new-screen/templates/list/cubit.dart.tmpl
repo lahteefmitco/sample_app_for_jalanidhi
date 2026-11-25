@@ -1,0 +1,170 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/constants/route_names.dart';
+import 'package:{{package}}/core/errors/error_handler.dart';
+import 'package:{{package}}/core/network/request_token.dart';
+import 'package:{{package}}/core/state/screen_cubit.dart';
+import 'package:{{package}}/core/state/ui_effect.dart';
+import 'package:{{package}}/core/state/view_status.dart';
+import 'package:{{package}}/core/utils/extensions.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+import 'package:{{package}}/global/models/{{item_snake}}_model.dart';
+import 'package:{{package}}/global/repositories/{{item_snake}}_repository.dart';
+
+/// Business logic of the {{item}} list screen: load, search, details sheet,
+/// and opening the "new {{item}}" form.
+///
+/// Working data lives in private fields; [_render] turns it into a fresh
+/// [{{Screen}}BuildState]. Navigation, snackbars and sheets are effects.
+class {{Screen}}Cubit extends ScreenCubit<{{Screen}}BuildState> {
+  /// Creates the Cubit. The route calls [load] right after creating it.
+  {{Screen}}Cubit({required this._{{item}}Repository})
+    : super(const {{Screen}}BuildState(), name: '{{Screen}}Cubit');
+
+  /// Request purpose of the main load (see `startBlockingRequest`).
+  static const String _loadRequest = 'load';
+
+  /// Request purpose of the quiet refresh after returning from the form.
+  static const String _refreshRequest = 'refresh';
+
+  /// Where the {{items}} come from.
+  final {{Item}}Repository _{{item}}Repository;
+
+  /// Controller of the search box. Owned by the Cubit, disposed in [close].
+  final TextEditingController searchController = TextEditingController();
+
+  /// Every {{item}} returned by the repository, before filtering.
+  List<{{Item}}Model> _all = const <{{Item}}Model>[];
+
+  /// The {{items}} that match [_query]; this is what the list shows.
+  List<{{Item}}Model> _visible = const <{{Item}}Model>[];
+
+  /// The current search text, exactly as typed.
+  String _query = '';
+
+  /// Current content status (loading, loaded, empty, error ...).
+  ViewStatus _status = ViewStatus.initial;
+
+  /// User-friendly error text, set only when [_status] is `error`.
+  String? _errorMessage;
+
+  /// Copies the working fields into a new build state and emits it.
+  void _render() {
+    emitBuild(
+      {{Screen}}BuildState(
+        status: _status,
+        query: _query,
+        {{items}}: List<{{Item}}Model>.unmodifiable(_visible),
+        errorMessage: _errorMessage,
+      ),
+    );
+  }
+
+  /// Loads the {{items}}.
+  ///
+  /// Triggered by the route when the screen opens, and with [forceRefresh]
+  /// by pull-to-refresh and "Retry". Emits `loading`, then `loaded`/`empty`,
+  /// or `error` plus an error snackbar. The screen is busy (disabled) while
+  /// it runs; a newer load or closing the screen cancels it silently.
+  Future<void> load({bool forceRefresh = false}) async {
+    final RequestToken token = startBlockingRequest(_loadRequest);
+    _status = ViewStatus.loading;
+    _errorMessage = null;
+    _render();
+    try {
+      _all = await _{{item}}Repository.get{{Items}}(
+        forceRefresh: forceRefresh,
+        requestToken: token,
+      );
+      _applyFilter();
+    } on Object catch (error) {
+      if (isCancellation(error)) {
+        return; // the screen was closed or a newer load started
+      }
+      _status = ViewStatus.error;
+      _errorMessage = ErrorHandler.messageFor(error);
+      _render();
+      showErrorMessage(_errorMessage!);
+    } finally {
+      // Un-blocks the screen (ignored if a newer load took over).
+      endBlockingRequest(token);
+    }
+  }
+
+  /// Filters the list. Triggered on every keystroke in the search box.
+  void onSearchChanged(String query) {
+    _query = query;
+    _applyFilter();
+  }
+
+  /// Clears the search box and shows every {{item}} again.
+  void clearSearch() {
+    searchController.clear();
+    onSearchChanged('');
+  }
+
+  /// Shows the details of [{{item}}] in a bottom sheet.
+  /// Triggered by tapping a list item.
+  void on{{Item}}Tapped({{Item}}Model {{item}}) {
+    emitEffect(
+      ShowInfoSheetEffect(
+        title: {{item}}.title,
+        fields: <MapEntry<String, String>>[
+          MapEntry<String, String>('Id', '#${ {{item}}.id}'),
+          MapEntry<String, String>('Title', {{item}}.title),
+        ],
+      ),
+    );
+  }
+
+  /// Opens the "new {{item}}" form. Triggered by the floating button.
+  void onCreatePressed() {
+    navigateTo(RouteNames.{{item}}Form);
+  }
+
+  /// Back from the form: re-reads the (cached) list and confirms the save.
+  @override
+  void onNavigationReturn(Object? result) {
+    _refresh(result);
+  }
+
+  /// Quietly re-reads the list (no loader) and reports [result].
+  Future<void> _refresh(Object? result) async {
+    final RequestToken token = newRequestToken(_refreshRequest);
+    try {
+      _all = await _{{item}}Repository.get{{Items}}(requestToken: token);
+      _applyFilter();
+      if (result == 'saved') {
+        showSuccessMessage(AppStrings.{{item}}Saved);
+      }
+    } on Object catch (error) {
+      if (isCancellation(error)) {
+        return;
+      }
+      showError(error);
+    }
+  }
+
+  /// Rebuilds [_visible] from [_all] and [_query], sets the status, renders.
+  void _applyFilter() {
+    // Leading/trailing spaces should not affect the search.
+    final String query = _query.trim();
+    _visible = query.isEmpty
+        ? _all
+        : _all
+              .where(
+                ({{Item}}Model {{item}}) => {{item}}.title.containsIgnoreCase(query),
+              )
+              .toList(growable: false);
+    _status = _visible.isEmpty ? ViewStatus.empty : ViewStatus.loaded;
+    _errorMessage = null;
+    _render();
+  }
+
+  /// Disposes the search controller, then cancels requests and closes.
+  @override
+  Future<void> close() {
+    searchController.dispose();
+    return super.close();
+  }
+}

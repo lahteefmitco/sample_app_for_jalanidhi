@@ -1,0 +1,35 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_dimensions.dart';
+import 'package:{{package}}/global/models/{{item_snake}}_model.dart';
+
+/// One {{item}} tile of the list: title and id, tappable.
+class {{Item}}ListItem extends StatelessWidget {
+  /// Creates the tile for [{{item}}]; [onTap] is forwarded to the Cubit.
+  const {{Item}}ListItem({super.key, required this.{{item}}, required this.onTap});
+
+  /// The {{item}} to show.
+  final {{Item}}Model {{item}};
+
+  /// Called when the tile is tapped.
+  final VoidCallback onTap;
+
+  /// Builds a card with the title (one line, ellipsis) and the id.
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        onTap: onTap,
+        title: Text(
+          {{item}}.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: AppDimensions.fontBody),
+        ),
+        subtitle: Text('#${ {{item}}.id}'),
+        trailing: const Icon(Icons.chevron_right),
+      ),
+    );
+  }
+}

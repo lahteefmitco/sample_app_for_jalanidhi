@@ -1,0 +1,73 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/state/screen_cubit.dart';
+import 'package:{{package}}/core/state/ui_effect.dart';
+import 'package:{{package}}/core/utils/app_logger.dart';
+import 'package:{{package}}/core/utils/validators.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+import 'package:{{package}}/global/repositories/{{item_snake}}_repository.dart';
+
+/// Business logic of the "new {{item}}" form: validation and the POST
+/// request.
+///
+/// While the request runs the square loader is shown and the screen is
+/// locked; a second tap on "Save" is ignored. On success the page closes
+/// with the result `'saved'` (the list shows the success message).
+class {{Screen}}Cubit extends ScreenCubit<{{Screen}}BuildState> {
+  /// Creates the Cubit. [{{item}}Repository] is injected by GetIt.
+  {{Screen}}Cubit({required this._{{item}}Repository})
+    : super(const {{Screen}}BuildState(), name: '{{Screen}}Cubit');
+
+  /// Where the new {{item}} is sent.
+  final {{Item}}Repository _{{item}}Repository;
+
+  /// Controller of the title field. Owned by the Cubit, disposed in [close].
+  final TextEditingController titleController = TextEditingController();
+
+  /// Validation message of the title field (working data).
+  String? _titleError;
+
+  /// Copies the working fields into a new build state and emits it.
+  void _render() {
+    emitBuild({{Screen}}BuildState(titleError: _titleError));
+  }
+
+  /// Validates and saves.
+  ///
+  /// Triggered by the "Save" button and by the keyboard's done key.
+  /// Emits the field errors, or: progress → (hide progress + close page) on
+  /// success, (hide progress + error snackbar) on failure.
+  Future<void> submit() async {
+    // A request is already running: ignore a second tap / Enter key press.
+    if (isBusy) {
+      return;
+    }
+    // The value that will be saved, without leading/trailing spaces.
+    final String title = titleController.text.trim();
+
+    _titleError = Validators.required(title);
+    _render();
+    if (_titleError != null) {
+      return;
+    }
+
+    cubitLog('submit: creating {{item}}', funtionName: 'submit');
+    // POST request: square loader + locked screen until it finishes.
+    showProgress();
+    try {
+      await _{{item}}Repository.create{{Item}}(title: title);
+      hideProgress();
+      emitEffect(const PopEffect('saved'));
+    } on Object catch (error) {
+      // Always unlock the screen, also when the request failed.
+      hideProgress();
+      showError(error);
+    }
+  }
+
+  /// Disposes the controller, then cancels requests and closes the Cubit.
+  @override
+  Future<void> close() {
+    titleController.dispose();
+    return super.close();
+  }
+}

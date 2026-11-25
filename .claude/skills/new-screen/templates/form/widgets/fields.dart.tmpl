@@ -1,0 +1,48 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_dimensions.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/state/screen_state.dart';
+import 'package:{{package}}/core/widgets/common_button.dart';
+import 'package:{{package}}/core/widgets/common_text_field.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+
+/// The form body: the title field and the save button.
+class {{Screen}}Fields extends StatelessWidget {
+  /// Creates the form body.
+  const {{Screen}}Fields({super.key});
+
+  /// Builds the fields; field errors come from the Cubit's build state.
+  @override
+  Widget build(BuildContext context) {
+    // Gives access to the controllers and to submit().
+    final {{Screen}}Cubit cubit = context.read<{{Screen}}Cubit>();
+    // Rebuilds when a validation message changes (not for effects).
+    return BlocBuilder<{{Screen}}Cubit, {{Screen}}State>(
+      buildWhen: buildStateChanged,
+      builder: (BuildContext context, {{Screen}}State state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            // Title field; the done key saves the form.
+            CommonTextField(
+              controller: cubit.titleController,
+              label: AppStrings.{{item}}TitleLabel,
+              errorText: state.build.titleError,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (String _) => cubit.submit(),
+            ),
+            SizedBox(height: AppDimensions.gapLarge),
+            // Save button (locked by BusyGuard while saving).
+            CommonButton(
+              label: AppStrings.save,
+              icon: Icons.save_outlined,
+              onPressed: cubit.submit,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

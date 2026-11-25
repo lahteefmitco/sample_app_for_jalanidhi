@@ -1,0 +1,33 @@
+# Static analysis for the whole project (lib and test).
+#
+# Besides the recommended Flutter lints, the rules below keep the code easy to
+# read for every developer:
+#  * every variable, parameter and generic has an explicit type
+#    (no `final myList = [];`, no untyped closure parameters),
+#  * every function declares its return type,
+#  * every public class, function and field has a `///` doc comment.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    # Report implicit `dynamic` casts, inference failures and raw generics.
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    # Explicit types everywhere.
+    always_specify_types: true
+    always_declare_return_types: true
+    prefer_typing_uninitialized_variables: true
+    # Documentation on every public API.
+    public_member_api_docs: true

@@ -1,0 +1,70 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/state/screen_state.dart';
+import 'package:{{package}}/core/state/view_status.dart';
+import 'package:{{package}}/core/widgets/common_empty_view.dart';
+import 'package:{{package}}/core/widgets/common_error_widget.dart';
+import 'package:{{package}}/core/widgets/common_loader.dart';
+import 'package:{{package}}/core/widgets/responsive_list_grid.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/widgets/{{item_snake}}_list_item.dart';
+import 'package:{{package}}/global/models/{{item_snake}}_model.dart';
+
+/// Switches between the square loader, the error view, the empty view and
+/// the list/grid of {{items}}.
+///
+/// A separate widget so only this part rebuilds when the {{items}} change.
+class {{Screen}}View extends StatelessWidget {
+  /// Creates the content area.
+  const {{Screen}}View({super.key});
+
+  /// Builds the view that matches the current status.
+  @override
+  Widget build(BuildContext context) {
+    // Used for callbacks only (retry, refresh, tap).
+    final {{Screen}}Cubit cubit = context.read<{{Screen}}Cubit>();
+    // Rebuilds only for a new BuildState; effects (snackbar, navigation)
+    // reuse the same BuildState, so `buildStateChanged` skips them.
+    return BlocBuilder<{{Screen}}Cubit, {{Screen}}State>(
+      buildWhen: buildStateChanged,
+      builder: (BuildContext context, {{Screen}}State state) {
+        // The part of the state this view renders.
+        final {{Screen}}BuildState build = state.build;
+        switch (build.status) {
+          // Nothing loaded yet: square loader.
+          case ViewStatus.initial:
+          case ViewStatus.loading:
+            return const CommonLoader();
+          // Loading failed: message + "Retry" (skips the cache).
+          case ViewStatus.error:
+            return CommonErrorWidget(
+              message: build.errorMessage ?? '',
+              onRetry: () => cubit.load(forceRefresh: true),
+            );
+          // Nothing at all, or nothing matches the search.
+          case ViewStatus.empty:
+            return const CommonEmptyView(message: AppStrings.no{{Items}});
+          // Pull down to refresh; list on phones, grid on wide screens.
+          case ViewStatus.loaded:
+            return RefreshIndicator(
+              onRefresh: () => cubit.load(forceRefresh: true),
+              child: ResponsiveListGrid(
+                itemCount: build.{{items}}.length,
+                tileHeight: 72,
+                itemBuilder: (BuildContext context, int index) {
+                  final {{Item}}Model {{item}} = build.{{items}}[index];
+                  // One tappable tile; a tap opens the details sheet.
+                  return {{Item}}ListItem(
+                    {{item}}: {{item}},
+                    onTap: () => cubit.on{{Item}}Tapped({{item}}),
+                  );
+                },
+              ),
+            );
+        }
+      },
+    );
+  }
+}

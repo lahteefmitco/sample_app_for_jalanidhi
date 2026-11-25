@@ -1,0 +1,76 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_dimensions.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/widgets/busy_guard.dart';
+import 'package:{{package}}/core/widgets/max_width_container.dart';
+import 'package:{{package}}/core/widgets/screen_effect_listener.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/widgets/{{screen}}_view.dart';
+
+/// {{Items}} page: a search box on top, the list below, and a button to
+/// create a new {{item}}.
+///
+/// The [{{Screen}}Cubit] is created and provided by the route in
+/// `app_routes.dart` (which also calls `load()`); this widget only reads it.
+class {{Screen}}Screen extends StatelessWidget {
+  /// Creates the screen.
+  const {{Screen}}Screen({super.key});
+
+  /// Builds the app bar, the search box, the content and the floating button.
+  @override
+  Widget build(BuildContext context) {
+    // `read` (not `watch`): only the controller and callbacks are needed here;
+    // the content rebuilds inside {{Screen}}View.
+    final {{Screen}}Cubit cubit = context.read<{{Screen}}Cubit>();
+    // Runs the Cubit's one-time effects: details sheet, navigation to the
+    // form, snackbars.
+    return ScreenEffectListener<{{Screen}}Cubit, {{Screen}}BuildState>(
+      screenName: '{{Screen}}Screen',
+      child: Scaffold(
+        // The back button is never guarded: leaving cancels the load.
+        appBar: AppBar(title: const Text(AppStrings.{{items}}Title)),
+        // Disabled while a request is running.
+        floatingActionButton: BusyGuard<{{Screen}}Cubit, {{Screen}}BuildState>(
+          child: FloatingActionButton.extended(
+            onPressed: cubit.onCreatePressed,
+            icon: const Icon(Icons.add),
+            label: const Text(AppStrings.new{{Item}}),
+          ),
+        ),
+        // Disabled (dimmed, no taps, no focus) while a request is running.
+        body: BusyGuard<{{Screen}}Cubit, {{Screen}}BuildState>(
+          child: Column(
+            children: <Widget>[
+              // Search box, kept narrow on desktop. The controller lives in
+              // the Cubit so the text survives rebuilds.
+              MaxWidthContainer(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppDimensions.pagePadding,
+                    AppDimensions.gap,
+                    AppDimensions.pagePadding,
+                    0,
+                  ),
+                  child: TextField(
+                    controller: cubit.searchController,
+                    onChanged: cubit.onSearchChanged,
+                    decoration: const InputDecoration(
+                      hintText: AppStrings.search,
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ),
+              // Content: loader / error / empty / list, filling the rest.
+              const Expanded(child: {{Screen}}View()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,72 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:{{package}}/core/state/ui_effect.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/global/repositories/{{item_snake}}_repository.dart';
+
+import '{{testHelpers}}/effects.dart';
+import '{{testHelpers}}/fake_backend.dart';
+
+/// Unit tests of [{{Screen}}Cubit]: validation, saving with the loader,
+/// failure, and the double-tap guard.
+void main() {
+  late FakeBackend backend;
+  late {{Screen}}Cubit cubit;
+
+  setUp(() {
+    backend = FakeBackend(<String, RouteHandler>{
+      'POST {{endpointPath}}': (RequestOptions _) => <String, dynamic>{
+        'id': 101,
+        'title': 'New',
+      },
+    }, latency: const Duration(milliseconds: 50));
+    cubit = {{Screen}}Cubit(
+      {{item}}Repository: {{Item}}Repository(backend.createClient()),
+    );
+  });
+
+  tearDown(() => cubit.close());
+
+  test('an empty title shows an error and sends nothing', () async {
+    final List<UiEffect> effects = await collectEffects(cubit, cubit.submit);
+    expect(cubit.state.build.titleError, isNotNull);
+    expect(effects, isEmpty);
+    expect(backend.count('POST {{endpointPath}}'), 0);
+  });
+
+  test('saving shows the loader, hides it and closes with "saved"', () async {
+    cubit.titleController.text = ' New ';
+    final List<UiEffect> effects = await collectEffects(cubit, cubit.submit);
+    expect(effects[0], isA<ShowProgressEffect>());
+    expect(effects[1], isA<HideProgressEffect>());
+    expect((effects[2] as PopEffect).result, 'saved');
+    expect(backend.count('POST {{endpointPath}}'), 1);
+    expect(cubit.isBusy, isFalse);
+  });
+
+  test('a second tap while saving is ignored', () async {
+    cubit.titleController.text = 'New';
+    final Future<void> first = cubit.submit();
+    final Future<void> second = cubit.submit();
+    await Future.wait(<Future<void>>[first, second]);
+    expect(backend.count('POST {{endpointPath}}'), 1);
+  });
+
+  test('a failure hides the loader, shows an error, keeps the page', () async {
+    final {{Screen}}Cubit failing = {{Screen}}Cubit(
+      {{item}}Repository: {{Item}}Repository(
+        FakeBackend(<String, RouteHandler>{}).createClient(),
+      ),
+    );
+    failing.titleController.text = 'New';
+    final List<UiEffect> effects = await collectEffects(
+      failing,
+      failing.submit,
+    );
+    expect(effects[1], isA<HideProgressEffect>());
+    expect((effects[2] as ShowSnackbarEffect).type, SnackbarType.error);
+    expect(effects.whereType<PopEffect>(), isEmpty);
+    expect(failing.isBusy, isFalse);
+    await failing.close();
+  });
+}

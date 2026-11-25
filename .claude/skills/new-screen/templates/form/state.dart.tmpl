@@ -1,0 +1,22 @@
+import 'package:flutter/foundation.dart';
+import 'package:{{package}}/core/state/screen_state.dart';
+
+/// What the {{item}} form renders: the validation error of each field.
+///
+/// The typed text lives in the Cubit's controllers, not here. Progress,
+/// errors and closing the page are effects, never part of this state.
+@immutable
+class {{Screen}}BuildState {
+  /// Creates a build state; no errors by default.
+  const {{Screen}}BuildState({this.titleError});
+
+  /// Message under the title field; `null` when the field is valid.
+  final String? titleError;
+
+  /// Readable description, handy in logs.
+  @override
+  String toString() => '{{Screen}}BuildState(titleError: $titleError)';
+}
+
+/// Full state of the {{item}} form: build state + one-time effect.
+typedef {{Screen}}State = ScreenState<{{Screen}}BuildState>;

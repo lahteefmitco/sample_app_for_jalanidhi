@@ -1,0 +1,70 @@
+import 'package:{{package}}/core/network/api_client.dart';
+import 'package:{{package}}/core/network/api_endpoints.dart';
+import 'package:{{package}}/core/network/api_response.dart';
+import 'package:{{package}}/core/network/json_parsers.dart';
+import 'package:{{package}}/core/network/request_token.dart';
+import 'package:{{package}}/core/utils/app_logger.dart';
+import 'package:{{package}}/global/models/{{item_snake}}_model.dart';
+
+/// Reads and creates {{items}}.
+///
+/// Registered once (lazy singleton) so every screen shares the cached list.
+/// Read methods accept a [RequestToken] so screens can cancel them; writes do
+/// not (once sent, a write should finish).
+class {{Item}}Repository {
+  /// Creates the repository on top of the shared [ApiClient].
+  {{Item}}Repository(this._api);
+
+  /// HTTP client used for every request.
+  final ApiClient _api;
+
+  /// {{Items}} loaded by [get{{Items}}]; `null` until the first load.
+  List<{{Item}}Model>? _cache;
+
+  /// Returns every {{item}} (`GET {{endpointPath}}`), cached after the first
+  /// load unless [forceRefresh] is `true`.
+  Future<List<{{Item}}Model>> get{{Items}}({
+    bool forceRefresh = false,
+    RequestToken? requestToken,
+  }) async {
+    final List<{{Item}}Model>? cached = _cache;
+    if (!forceRefresh && cached != null) {
+      return cached;
+    }
+    repositoryLog(
+      'get{{Items}}: fetching',
+      funtionName: '{{Item}}Repository.get{{Items}}',
+    );
+    final ApiResponse<List<{{Item}}Model>> response = await _api
+        .get<List<{{Item}}Model>>(
+          ApiEndpoints.{{items}},
+          parser: (Object? json) =>
+              parseList<{{Item}}Model>(json, {{Item}}Model.fromJson),
+          requestToken: requestToken,
+        );
+    _cache = response.data;
+    return response.data;
+  }
+
+  /// Creates a {{item}} (`POST {{endpointPath}}`) and adds it to the cache.
+  Future<{{Item}}Model> create{{Item}}({required String title}) async {
+    final ApiResponse<{{Item}}Model> response = await _api.post<{{Item}}Model>(
+      ApiEndpoints.{{items}},
+      data: <String, Object>{'title': title},
+      parser: (Object? json) =>
+          parseObject<{{Item}}Model>(json, {{Item}}Model.fromJson),
+    );
+    final List<{{Item}}Model>? cached = _cache;
+    if (cached != null) {
+      _cache = List<{{Item}}Model>.unmodifiable(<{{Item}}Model>[
+        response.data,
+        ...cached,
+      ]);
+    }
+    repositoryLog(
+      'create{{Item}}: ${response.data}',
+      funtionName: '{{Item}}Repository.create{{Item}}',
+    );
+    return response.data;
+  }
+}

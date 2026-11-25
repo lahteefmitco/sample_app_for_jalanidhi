@@ -1,0 +1,87 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/widgets/square_loader.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/{{screen}}_screen.dart';
+import 'package:{{package}}/global/repositories/{{item_snake}}_repository.dart';
+
+import '{{testHelpers}}/fake_backend.dart';
+import '{{testHelpers}}/pump_app.dart';
+
+/// Widget tests of [{{Screen}}Screen]: loader, list, search, empty, error,
+/// responsive layout.
+void main() {
+  /// Pumps the screen with a Cubit backed by [routes].
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    Map<String, RouteHandler> routes, {
+    Size size = const Size(400, 800),
+  }) async {
+    final FakeBackend backend = FakeBackend(routes);
+    await pumpApp(
+      tester,
+      // Provides the Cubit like the route does, and starts loading.
+      BlocProvider<{{Screen}}Cubit>(
+        create: (BuildContext _) => {{Screen}}Cubit(
+          {{item}}Repository: {{Item}}Repository(backend.createClient()),
+        )..load(),
+        child: const {{Screen}}Screen(),
+      ),
+      size: size,
+    );
+  }
+
+  /// Routes that answer with two {{items}}.
+  final Map<String, RouteHandler> twoItems = <String, RouteHandler>{
+    'GET {{endpointPath}}': (RequestOptions _) => <Map<String, dynamic>>[
+      <String, dynamic>{'id': 1, 'title': 'Alpha'},
+      <String, dynamic>{'id': 2, 'title': 'Beta'},
+    ],
+  };
+
+  testWidgets('shows the square loader, then the {{items}}', (
+    WidgetTester tester,
+  ) async {
+    await pumpScreen(tester, twoItems);
+    expect(find.byType(SquareLoader), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+  });
+
+  testWidgets('typing in the search box filters the list', (
+    WidgetTester tester,
+  ) async {
+    await pumpScreen(tester, twoItems);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'alp');
+    await tester.pump();
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'nothing');
+    await tester.pump();
+    expect(find.text(AppStrings.no{{Items}}), findsOneWidget);
+  });
+
+  testWidgets('a failed load shows the error view with Retry', (
+    WidgetTester tester,
+  ) async {
+    await pumpScreen(tester, <String, RouteHandler>{});
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.retry), findsOneWidget);
+  });
+
+  testWidgets('no overflow on a narrow phone or a wide desktop', (
+    WidgetTester tester,
+  ) async {
+    await pumpScreen(tester, twoItems, size: const Size(320, 640));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await pumpScreen(tester, twoItems, size: const Size(1400, 900));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+}

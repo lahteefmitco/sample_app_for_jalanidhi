@@ -1,0 +1,42 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:{{package}}/core/constants/app_dimensions.dart';
+import 'package:{{package}}/core/constants/app_strings.dart';
+import 'package:{{package}}/core/widgets/busy_guard.dart';
+import 'package:{{package}}/core/widgets/max_width_container.dart';
+import 'package:{{package}}/core/widgets/screen_effect_listener.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_cubit.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/cubit/{{screen}}_state.dart';
+import 'package:{{package}}/features/{{feature}}/screens/{{screen}}/widgets/{{screen}}_fields.dart';
+
+/// "New {{item}}" page: the form fields and the save button, centered and
+/// width-limited.
+///
+/// The [{{Screen}}Cubit] is provided by the route in `app_routes.dart`.
+class {{Screen}}Screen extends StatelessWidget {
+  /// Creates the screen.
+  const {{Screen}}Screen({super.key});
+
+  /// Builds the app bar and the scrollable, width-limited form.
+  @override
+  Widget build(BuildContext context) {
+    // Runs the Cubit's effects: square loader while saving, error snackbar,
+    // and closing the page with 'saved'.
+    return ScreenEffectListener<{{Screen}}Cubit, {{Screen}}BuildState>(
+      screenName: '{{Screen}}Screen',
+      child: Scaffold(
+        appBar: AppBar(title: const Text(AppStrings.new{{Item}})),
+        // Locks the fields and the button while the POST request runs.
+        body: BusyGuard<{{Screen}}Cubit, {{Screen}}BuildState>(
+          child: MaxWidthContainer(
+            maxWidth: 640,
+            // Scrollable so the keyboard never hides the button.
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(AppDimensions.pagePadding),
+              child: const {{Screen}}Fields(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

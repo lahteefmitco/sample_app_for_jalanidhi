@@ -1,0 +1,42 @@
+import 'package:flutter/foundation.dart';
+import 'package:{{package}}/core/state/screen_state.dart';
+import 'package:{{package}}/core/state/view_status.dart';
+import 'package:{{package}}/global/models/{{item_snake}}_model.dart';
+
+/// What the {{item}} list renders: status, search text and visible {{items}}.
+///
+/// Immutable: the Cubit creates a new instance with the constructor for every
+/// change, which is how `buildStateChanged` knows the list must rebuild.
+@immutable
+class {{Screen}}BuildState {
+  /// Creates a build state. The defaults describe the screen before anything
+  /// was loaded.
+  const {{Screen}}BuildState({
+    this.status = ViewStatus.initial,
+    this.query = '',
+    this.{{items}} = const <{{Item}}Model>[],
+    this.errorMessage,
+  });
+
+  /// Which view to show: loader, error, empty or the list.
+  final ViewStatus status;
+
+  /// The search text the [{{items}}] were filtered with.
+  final String query;
+
+  /// The {{items}} that match [query], in display order.
+  final List<{{Item}}Model> {{items}};
+
+  /// Text shown by the error view; `null` unless [status] is `error`.
+  final String? errorMessage;
+
+  /// Short description for logs (prints the count, not the whole list).
+  @override
+  String toString() =>
+      '{{Screen}}BuildState(status: $status, query: $query, '
+      '{{items}}: ${ {{items}}.length}, errorMessage: $errorMessage)';
+}
+
+/// Full state of the {{item}} list screen: the build state plus the one-time
+/// effect handled by `ScreenEffectListener`.
+typedef {{Screen}}State = ScreenState<{{Screen}}BuildState>;
